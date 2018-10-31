@@ -87,12 +87,12 @@ column_names = top_10_unis.columns
 for i in column_names:
     print("\n","\n",i)
     p = sns.relplot(y='2018',x=i,data = top_10_unis)
-    #p.savefig('/Users/PeterlaCour/documents/MIQEF/Smart Data Analytics/'+i)
+    p.savefig('/Users/PeterlaCour/documents/MIQEF/SDA_UniRanking/Scatter Plots/top10 '+i)
 
 
 # Pair Plot
 pairs10 = sns.pairplot(top_10_unis, diag_kind="kde", markers="+",plot_kws=dict(s=50, edgecolor="b", linewidth=1),diag_kws=dict(shade=True))
-pairs10.savefig('/Users/PeterlaCour/documents/MIQEF/Smart Data Analytics/top10pairs.png')
+pairs10.savefig('/Users/PeterlaCour/documents/MIQEF/SDA_UniRanking/top10pairs.png')
 
 
 
@@ -119,25 +119,28 @@ filename = '/Users/PeterlaCour/documents/MIQEF/SDA_UniRanking/UniRanking.gpickle
 G = nx.read_gpickle(filename)
 mst = nx.minimum_spanning_tree(G) 
 
+# Uses Kruskal’s algorithm.
+print(sorted(mst.edges(data=True)))
 
-p = plt.plot(df_number_cleaned['2018'],df_number_cleaned['Career progress rank'])
-plt.show()
-draw()
+# minimum_spanning_edges(G, weight='weight', data=True)
 
+nx.draw(G, markers="+")
 
-from_pandas_dataframe(df_number_cleaned, source, target[, …]
+nx.draw_networkx(G)
 
+nx.draw_networkx(mst)
 
-df_number_cleaned[["2018","Career progress rank"]]
-
+nx.draw_shell(mst)
 
 
 mst
 
+import pygraphviz as pgv
+import pydot
+A = pgv.write_dot(G)
 
-
-
-
+A.layout()
+A.draw('simple.png')
 
 
 
