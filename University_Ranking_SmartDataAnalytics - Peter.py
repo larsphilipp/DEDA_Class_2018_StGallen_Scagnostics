@@ -207,7 +207,7 @@ convex_hull = delaunay_triangulation.convex_hull
 
 
 
-
+# R PACKAGE EXPLANATION: https://cran.r-project.org/web/packages/scagnostics/index.html
 
 
 
