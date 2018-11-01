@@ -14,7 +14,7 @@ import seaborn as sns
 
 
 # data scrape
-#data = pd.read_csv('/Users/PeterlaCour/documents/MIQEF/Smart Data Analytics/masters-in-management-2018.csv',encoding='ISO-8859-1', delimiter = ";")
+data = pd.read_csv('/Users/PeterlaCour/documents/MIQEF/Smart Data Analytics/masters-in-management-2018.csv',encoding='ISO-8859-1', delimiter = ";")
 
 
 import requests
@@ -43,7 +43,7 @@ for year in years:
 print(output_dict)  
 
 
-df = output_dict["2018"]
+df = output_dict["2017"]
 
 column_names = df.columns
 column_names
@@ -51,7 +51,7 @@ column_names
 
 # clean column names?
 
-#df.to_csv(path_or_buf= '/Users/PeterlaCour/documents/MIQEF/SDA_UniRanking/2018 Scrape.csv')
+#df.to_csv(path_or_buf= '/Users/PeterlaCour/documents/MIQEF/SDA_UniRanking/2017 Scrape.csv')
 
 
 # deleting columns with strings
@@ -120,7 +120,54 @@ pairs10.savefig('/Users/PeterlaCour/documents/MIQEF/SDA_UniRanking/top10pairs.pn
 # ----------------------------------------------------
 
 
+import numpy as np
 
+df_number_cleaned[["2018","Career progress rank"]] 
+
+M = np.array(df_number_cleaned[["2018","Career progress rank"]])
+
+M 
+
+n = 100 # number of observations in M / dots in plot
+
+D = np.zeros((n,n))
+
+ 
+
+for p in range(0,n):
+
+    x1 = M[p,1]
+
+    y1 = M[p,0]
+
+    print(x1)
+    for q in range(0,n):
+
+        x2 = M[q,1]
+
+        y2 = M[q,0]
+
+        D[p,q] = np.sqrt(np.square(x1 - x2) + np.square(y1 - y2))
+
+D[0]  
+   
+
+####### minimum spanning tree
+
+import scipy.sparse as scs
+
+from scipy.sparse.csgraph import minimum_spanning_tree
+
+       
+
+# n*n matrice with the (normalized?) edges that give the MST
+
+MST = minimum_spanning_tree(D).toarray().astype(float)
+
+MST
+
+nx.draw_networkx(MST[0])
+### Now we need to find a way how to disply only the edges of those pairs that have a non-zero value in this Matrix.
 
 # ----------------------------------------------------
 
@@ -176,17 +223,26 @@ for o in range(len(tuple_array)):
 
 total_edge_length = sum(minimum_edge)
 
+
+minimum_edge
+# outlier has degree 1 and has an associated edge weight greater than w = q75 + 1.5(q75-q25)
+
+
+
 # outliers = c = length(T_outliers)/length(T)
 q25                     = np.quantile(minimum_edge,0.25)
 q75                     = np.quantile(minimum_edge,0.75)
 length_of_long_edges    = q75 - 1.5 * (q75 - q25)
-c_outliers              = length_of_long_edges / total_edge_length
 
+# false: c_outliers              = length_of_long_edges / total_edge_length
 
+# t-outliers is the lengths of outliers mst length not the weitghts
 
 # convex = area(A)/area(H) - area of alpha hull / convex hull
-    
+ 
 
+   
+#plt.hist(D[1]/100, bins = 100)
 
 
     
@@ -194,13 +250,22 @@ c_outliers              = length_of_long_edges / total_edge_length
 
 
 
+
+total_count = 100 # ????
+
 # skewness: ratio of edge lengths in edge distribution: (q90 - q50) / (q90 - q10)
-q90         = np.quantile(minimum_edge,0.9)
-q50         = np.quantile(minimum_edge,0.5)
-q10         = np.quantile(minimum_edge,0.1)
-skewness    = (q90 - q50) / (q90 - q10)
+q90                 = np.quantile(minimum_edge,0.9)
+q50                 = np.quantile(minimum_edge,0.5)
+q10                 = np.quantile(minimum_edge,0.1)
+skewness            = (q90 - q50) / (q90 - q10)
+# !!!!!!!
+t                   = total_count / 500 # total count of binned data
+# !!!!!!!
+correction          = 0.7 + 0.3 * (1 + t**2)
 
-
+corrected_skewness  = 1 - correction * (1 - skewness) 
+corrected_skewness
+# need to get count of binned data
 
 # clumpy = max(1-max(legnth(ek))/length(ej)) - ????????
     
@@ -208,7 +273,10 @@ skewness    = (q90 - q50) / (q90 - q10)
     
 
 # sparsity = min(1,q90)?
-sparsity = min(1,q90) 
+
+# min(90th quantile of mstlengths / 1000, 1)
+
+sparsity = min(q90 / 1000, 1)
 sparsity
 
 
@@ -492,3 +560,208 @@ nx.draw_networkx(mst)
 
 '''
 
+df_number_cleaned[["2018","Career progress rank"]]
+
+
+y_data = np.asarray(df_number_cleaned["2018"])
+x_data = np.asarray(df_number_cleaned["Career progress rank"])
+counts = len(y_data)
+
+
+def binhex(x,y,nBins):
+    # x = list of xs
+    # y = list of ys
+    # nBins = number of bins
+    
+    
+    # declarations
+    count   = [0] * nBins
+    xBin    = [0] * nBins
+    yBin    = [0] * nBins
+    
+    
+    
+    n       = len(x)
+    con1    = 0.25
+    con2    = 1.0/3.0
+    c1      = nBins -1
+    c2      = c1 / np.sqrt(3.0)
+    jinc    = nBins
+    iinc    = 2 * nBins
+    nBin    = (nBins + 20) * (nBins + 20)
+    
+    #count,xbin,ybin
+    
+    for i in range(n):
+        if np.isnan(x[i]) or np.isnan(y[i]):
+            continue
+        sx      = c1 * x[i]
+        sy      = c2 * y[i]
+        i1      = sy + 0.5
+        j1      = sx + 0.5
+        
+        dy      = sy - i1
+        dx      = sx - j1
+        
+        dist1   = dx**2 + 3.0 * (dy)**2
+        
+        if dist1 < con1:
+            m = i1 * iinc + j1
+        elif dist1 > con2:
+            m = sy * iinc + sx + jinc
+        else:
+            i2 = sy
+            j2 = sx
+            dist2 = dx**2 + 3 * dy**2
+            
+            if dist1 <= dist2:
+                m = i1 * iinc + j1
+            else:
+                m = i2 * iinc + j2 + jinc
+        m = int(m)     
+        count[i] += 1
+        xBin[i]  += (x[i] - xBin[i]) / count[i]
+        yBin[i]  += (y[i] - yBin[i]) / count[i]    
+            
+        # delete Empty bins
+        
+            # need to add code?
+        
+        # ----------------
+        
+
+        
+        
+    tcount = copy.deepcopy(count)
+    xtBin  = copy.deepcopy(xBin)
+    ytBin  = copy.deepcopy(yBin)
+        
+    
+          
+            
+binhex(x_data,y_data,1000)           
+            
+            
+            
+plt.hexbin(x_data, y_data, gridsize=15, cmap = "viridis")           
+            
+plt.scatter(x_data,y_data)        
+        
+
+
+
+private static void normalizePoints(double[][] points) {
+        double[] min = new double[points.length];
+        double[] max = new double[points.length];
+        for (int i = 0; i < points.length; i++)
+            for (int j = 0; j < points[0].length; j++) {
+		if (j == 0)
+		    max[i] = min[i] = points[i][0];
+		else if (min[i] > points[i][j])
+		    min[i] = points[i][j];
+		else if (max[i] < points[i][j])
+		    max[i] = points[i][j];
+            }
+        for (int i = 0; i < points.length; i++)
+            for (int j = 0; j < points[0].length; j++)
+                points[i][j] = (points[i][j] - min[i]) / (max[i] - min[i]);
+    }
+            
+def normalise(points):
+    min1 = [0.0,0.0] * len(points)
+    max1 = [0.0,0.0] * len(points)
+    for i in range(len(points)):
+        for j in range(len(points)):
+            if j == 0:
+                max1[i] = min1[i] = points[i][0]
+            elif min1[i] > points[i][j]
+
+
+[x_data, y_data]
+
+
+
+
+tuple_array = []
+
+for i in range(len(df["2018"])):
+    tuple_array.append((df["2018"][i],df["Career progress rank"][i]))
+
+points = np.asarray(df[["Career progress rank","2018"]])
+
+len(points)
+
+#find_outliers
+
+def find_cutoff(MST):
+    q25                     = np.quantile(MST,0.25)
+    q75                     = np.quantile(MST,0.75)
+    cutoff                  = q75 - 1.5 * (q75 - q25)
+
+    return cutoff
+
+MST_sorted2 = me.sort()
+
+def minimum_edge(tuple_array):
+    min_edge = []
+    for o in range(len(tuple_array)):
+        edges_length = []
+        m,n = tuple_array[o]
+        
+        for l in range(len(tuple_array)):
+            i,j = tuple_array[l]
+            edges_length.append(np.sqrt((m-i)**2+(n-j)**2))
+        edges_length.pop(o)
+        min_edge.append(min(edges_length))
+    return min_edge
+
+me = minimum_edge(tuple_array)
+
+total_edge_length = sum(me)
+
+
+
+
+school_names =  np.asarray(df["School name"])
+me_school = pd.DataFrame({'ME':me, 'School name':school_names})
+me_school.sort_values(by="ME")
+
+
+cut = find_cutoff(me_school["ME"])
+cut
+outliers = []
+outliers_schools = []
+MST_outliers_length = 0
+
+# find outliers
+for i in range(len(points)):
+    if me[i] < cut:
+        outliers.append(y_data[i])
+        outliers_schools.append(me_school["School name"][i])
+        MST_outliers_length += me[i]
+# c for outlier
+outlier_c = MST_outliers_length /  total_edge_length 
+outlier_c
+
+outliers
+outliers_schools
+
+def alpha_value():
+    q90 = np.quantile(me_school["ME"],0.90)
+    alpha = q90
+    return min(alpha,100)
+
+alpha_value()
+
+
+def computePearson(x,y,weights):
+    n = len(x)
+    xmean   = 0
+    ymean   = 0
+    xx      = 0
+    yy      = 0
+    xy      = 0
+    sumwt   = 0
+    for i in range(n):
+        wt = weights[i]
+        
