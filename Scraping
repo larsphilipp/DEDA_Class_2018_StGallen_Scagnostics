@@ -12,10 +12,24 @@ for year in years:
     rankings_table = soup.find(id = "rankingstable")
     rankings_table.prettify()
     output = pd.read_html(url)
-    output_dict[year] = output
     k = 0
     for i in output[0].columns:
         if "Unnamed" in i:
             output[0].drop("Unnamed: " + str(k),axis =1, inplace = True)
             k += 1
-print(output_dict)            
+    output = output[0][:-1]
+    
+    output_dict[year] = output
+    
+print(output_dict)  
+
+
+df = output_dict["2018"]
+
+column_names = df.columns
+column_names
+# ----------------------------------------------------------------------------
+
+# clean column names?
+
+#df.to_csv(path_or_buf= '/Users/PeterlaCour/documents/MIQEF/SDA_UniRanking/2018 Scrape.csv')

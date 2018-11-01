@@ -14,34 +14,54 @@ import seaborn as sns
 
 
 # data scrape
-data = pd.read_csv('/Users/PeterlaCour/documents/MIQEF/Smart Data Analytics/masters-in-management-2018.csv',encoding='ISO-8859-1', delimiter = ";")
+#data = pd.read_csv('/Users/PeterlaCour/documents/MIQEF/Smart Data Analytics/masters-in-management-2018.csv',encoding='ISO-8859-1', delimiter = ";")
 
 
+import requests
+from bs4 import BeautifulSoup
+import pandas as pd
+
+url_wo_year='http://rankings.ft.com/businessschoolrankings/masters-in-management-'
+years = ['2014','2015','2016','2017','2018']
+output_dict = {}
+for year in years:
+    url = url_wo_year + year
+    page = requests.get(url)
+    soup = BeautifulSoup(page.content, 'html.parser')
+    rankings_table = soup.find(id = "rankingstable")
+    rankings_table.prettify()
+    output = pd.read_html(url)
+    k = 0
+    for i in output[0].columns:
+        if "Unnamed" in i:
+            output[0].drop("Unnamed: " + str(k),axis =1, inplace = True)
+            k += 1
+    output = output[0][:-1]
+    
+    output_dict[year] = output
+    
+print(output_dict)  
 
 
+df = output_dict["2018"]
 
-
-
-
-
-df= pd.DataFrame(data)
-
-
-df.head()
-
-
+column_names = df.columns
+column_names
 # ----------------------------------------------------------------------------
+
+# clean column names?
+
+#df.to_csv(path_or_buf= '/Users/PeterlaCour/documents/MIQEF/SDA_UniRanking/2018 Scrape.csv')
 
 
 # deleting columns with strings
 df_number = df.copy()
-string_columns = ["Relevant degree","Programme name","Country","School name","Maximum course fee (local currency)","Employed at three months (%)"]
+string_columns = ["Relevant degree","Programme name","Country","School name","Maximum course fee (local currency)","Employment[5]"]
 for i in string_columns:
     df_number.drop(i, axis=1, inplace = True)
 
 
 
-column_names = df_number.columns
 
 
 df_number.head()
@@ -50,16 +70,17 @@ column_names
 
 # drop unnecessary columns
 df_number_cleaned = df_number.copy()
-string_columns_2 = ["2017","2016","3-year average","Salary today (US$)","Number enrolled 2017/18"]
+string_columns_2 = ["2017","2016","3-year average","Salary today (US$)[1]","Number enrolled 2017/18"]
 for i in string_columns_2:
     df_number_cleaned.drop(i, axis=1, inplace = True)
 
+df_number_cleaned.dropna(axis = 1, how = 'any')
+column_names = df_number_cleaned.columns
 
 # scatter-plots with ranking on y axis
-
 for i in column_names:
     print("\n","\n",i)
-    p = sns.relplot(y='2018',x=i,data = df_number)
+    p = sns.relplot(y='2018',x=i,data = df_number_cleaned)
     #p.show()
     #p.savefig('/Users/PeterlaCour/documents/MIQEF/Smart Data Analytics/'+i)
 
@@ -67,7 +88,7 @@ for i in column_names:
 # Pair Plot
 pairs = sns.pairplot(df_number_cleaned, diag_kind="kde", markers="+",plot_kws=dict(s=50, edgecolor="b", linewidth=1),diag_kws=dict(shade=True))
 
-
+type(df_number_cleaned["2018"][1])
 
 
 
@@ -261,13 +282,16 @@ def concave(points,alpha_x=150,alpha_y=250):
 
 p = concave(tuple_array)
 pos=nx.spring_layout(p)
+
+pos = dict( (n, n) for n in tuple_array)
 #nx.draw_networkx(p,node_size = 15, dim = 3, pos = pos)
-mst = nx.minimum_spanning_tree(p) 
+mst = nx.minimum_spanning_tree(p,algorithm = 'boruvka') 
 nx.draw(mst,node_size = 15, dim = 3, pos = pos)
-nx.draw(p,node_size = 15, dim = 3, pos = pos)
+nx.draw_networkx(mst,node_size = 15, dim = 3, pos = pos)
 
+list(mst)
 
-scatter(df_number_cleaned["2018"],df_number_cleaned["Career progress rank"])
+plt.scatter(df_number_cleaned["2018"],df_number_cleaned["Career progress rank"])
 
 
 '''
