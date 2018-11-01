@@ -76,9 +76,6 @@ c = set(df["Country"])
 
 
 
-top_10_unis = df_number_cleaned[0:10]
-top_10_unis.head()
-
 
 column_names = top_10_unis.columns
 
@@ -103,44 +100,10 @@ pairs10.savefig('/Users/PeterlaCour/documents/MIQEF/SDA_UniRanking/top10pairs.pn
 
 
 
-import networkx as nx
-import pickle
+
+# ----------------------------------------------------
 
 
-g = nx.from_pandas_edgelist(df_number_cleaned[["2018","Career progress rank"]], source='Career progress rank', target='2018') 
-
-
-
-
-
-nx.write_gpickle(g, '/Users/PeterlaCour/documents/MIQEF/SDA_UniRanking/UniRanking.gpickle')
-
-filename = '/Users/PeterlaCour/documents/MIQEF/SDA_UniRanking/UniRanking.gpickle'
-G = nx.read_gpickle(filename)
-mst = nx.minimum_spanning_tree(G) 
-
-# Uses Kruskal’s algorithm.
-print(sorted(mst.edges(data=True)))
-
-# minimum_spanning_edges(G, weight='weight', data=True)
-
-nx.draw(G, markers="+")
-
-nx.draw_networkx(G)
-
-nx.draw_networkx(mst)
-
-nx.draw_shell(mst)
-
-
-mst
-
-import pygraphviz as pgv
-import pydot
-A = pgv.write_dot(G)
-
-A.layout()
-A.draw('simple.png')
 
 
 
@@ -164,14 +127,164 @@ c_table.savefig('/Users/PeterlaCour/documents/MIQEF/Smart Data Analytics/correla
 
 
 
-
-
-
-
-
-
-
 #-------------------------------------------------------------
+
+
+
+df_number_cleaned[["2018","Career progress rank"]]
+
+
+tuple_array = []
+
+for i in range(len(df_number_cleaned["2018"])):
+    tuple_array.append((df_number_cleaned["2018"][i],df_number_cleaned["Career progress rank"][i]))
+
+
+# minimum_spanning tree
+minimum_edge = []
+
+for o in range(len(tuple_array)):
+    edges_length = []
+    m,n = tuple_array[o]
+    
+    for l in range(len(tuple_array)):
+        i,j = tuple_array[l]
+        edges_length.append(np.sqrt((m-i)**2+(n-j)**2))
+    edges_length.pop(o)
+    minimum_edge.append(min(edges_length))
+
+total_edge_length = sum(minimum_edge)
+
+# outliers = c = length(T_outliers)/length(T)
+q25                     = np.quantile(minimum_edge,0.25)
+q75                     = np.quantile(minimum_edge,0.75)
+length_of_long_edges    = q75 - 1.5 * (q75 - q25)
+c_outliers              = length_of_long_edges / total_edge_length
+
+
+
+# convex = area(A)/area(H) - area of alpha hull / convex hull
+    
+
+
+
+    
+# skinny = 1 - sqrt(4pi * area(a))) / perimeter(a)
+
+
+
+# skewness: ratio of edge lengths in edge distribution: (q90 - q50) / (q90 - q10)
+q90         = np.quantile(minimum_edge,0.9)
+q50         = np.quantile(minimum_edge,0.5)
+q10         = np.quantile(minimum_edge,0.1)
+skewness    = (q90 - q50) / (q90 - q10)
+
+
+
+# clumpy = max(1-max(legnth(ek))/length(ej)) - ????????
+    
+    
+    
+
+# sparsity = min(1,q90)?
+sparsity = min(1,q90) 
+sparsity
+
+
+
+
+
+
+# delaunay triangulation
+from scipy import spatial
+delaunay_triangulation = spatial.Delaunay(tuple_array)
+convex_hull = delaunay_triangulation.convex_hull
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+from scipy.spatial import Delaunay, ConvexHull
+import networkx as nx
+ 
+
+
+def concave(points,alpha_x=150,alpha_y=250):
+    de = Delaunay(points)
+    dec = []
+    a = alpha_x
+    b = alpha_y
+    for i in de.simplices:
+        tmp = []
+        j = [points[c] for c in i]
+        if abs(j[0][1] - j[1][1])>a or abs(j[1][1]-j[2][1])>a or abs(j[0][1]-j[2][1])>a or abs(j[0][0]-j[1][0])>b or abs(j[1][0]-j[2][0])>b or abs(j[0][0]-j[2][0])>b:
+            continue
+        for c in i:
+            tmp.append(points[c])
+        dec.append(tmp)
+    G = nx.Graph()
+    for i in dec:
+            G.add_edge(i[0], i[1])
+            G.add_edge(i[0], i[2])
+            G.add_edge(i[1], i[2])
+    '''
+    ret = []
+    for graph in nx.connected_component_subgraphs(G):
+        ch = ConvexHull(graph.nodes())
+        print(graph.nodes())
+        tmp = []
+        for i in ch.simplices:
+            tmp.append(graph.nodes()[i[0]])
+            tmp.append(graph.nodes()[i[1]])
+        ret.append(tmp)
+    return ret  
+    #return [graph.nodes() for graph in nx.connected_component_subgraphs(G)] - all points inside the shape
+    '''
+    return G
+
+p = concave(tuple_array)
+pos=nx.spring_layout(p)
+#nx.draw_networkx(p,node_size = 15, dim = 3, pos = pos)
+mst = nx.minimum_spanning_tree(p) 
+nx.draw(mst,node_size = 15, dim = 3, pos = pos)
+nx.draw(p,node_size = 15, dim = 3, pos = pos)
+
+
+scatter(df_number_cleaned["2018"],df_number_cleaned["Career progress rank"])
+
+
+'''
+circular_layout(G[, dim, scale, center])	Position nodes on a circle.
+random_layout(G[, dim, center])	Position nodes uniformly at random in the unit square.
+shell_layout(G[, nlist, dim, scale, center])	Position nodes in concentric circles.
+spring_layout(G[, dim, k, pos, fixed, ...])	Position nodes using Fruchterman-Reingold force-directed algorithm.
+spectral_layout(G[, dim, weight, scale, center])	Position nodes using the eigenvectors of the graph Laplacian.
+''''
+
+
+
+
+
+'''
+
+# R SCAGNOSTICS
 
 
 import os
@@ -266,51 +379,92 @@ y = [5,3,4,1,45,31]
 r_getname(robjects.FloatVector(x),robjects.FloatVector(y))
 
 
+'''
 
 
 
 
-import choix
-
-
-column_names
-
-ranks = df_number_cleaned["2018"]
-parameters = df_number_cleaned["Career progress rank"]
-
-x = choix.generate_rankings(parameters,99,1)
-x
-choix.log_likelihood_rankings(df_number_cleaned,parameters)
-
-lists = [df["2018"],df["Career progress rank"]]
-
-l = []
-for i in df["2018"]:
-    l.append(i)
-l 
-
-l2 = []
-for i in df["Career progress rank"]:
-    l2.append(i)
-
-l3 = [l,l2]
-    
-params = choix.generate_rankings(df_number_cleaned["Career progress rank"],100,3) 
-    
-choix.compare(l,params, rank = True)  
-params
 
 
 
 
-y = df_number_cleaned[["Career progress rank", "International mobility rank"]]
+'''
+
+import networkx as nx
+import pickle
 
 
-params = choix.generate_rankings( y,100,3) 
-params
-choix.probabilities(ranks, params)
-pairs
-pairs.savefig("PairPlot.png")
-columns = df_number_cleaned.columns
-columns
+g = nx.from_pandas_edgelist(df_number_cleaned[["2018","Career progress rank"]], source='Career progress rank', target='2018') 
+
+
+
+
+
+nx.write_gpickle(g, '/Users/PeterlaCour/documents/MIQEF/SDA_UniRanking/UniRanking.gpickle')
+
+filename = '/Users/PeterlaCour/documents/MIQEF/SDA_UniRanking/UniRanking.gpickle'
+G = nx.read_gpickle(filename)
+mst = nx.minimum_spanning_tree(G, data = True) 
+
+# Uses Kruskal’s algorithm.
+print(sorted(mst.edges(data=True)))
+
+# minimum_spanning_edges(G, weight='weight', data=True)
+
+nx.draw(G, markers="+")
+
+nx.draw_networkx(G)
+
+nx.draw_networkx(mst)
+nx.draw_shell(mst)
+
+
+G = nx.Graph()
+G.add_nodes_from((1,2))
+list(G)
+nx.draw(G)
+
+G = nx.Graph()
+e = (2, 3)
+G.add_edge(*e)
+nx.draw(G)
+
+print(mst)
+
+pos=nx.spring_layout(G)
+
+plt.figure()
+nx.draw(mst, with_labels=False, pos = pos, node_size = 15, dim = 3)
+plt.show()
+
+di_g=nx.DiGraph(g)
+mst = nx.minimum_spanning_tree(di_g) 
+
+nx.connected_components(G)
+
+nx.draw_random(mst)
+
+import pygraphviz as pgv
+import pydot
+A = pgv.write_dot(G)
+
+A.layout()
+A.draw('simple.png')
+
+mse = nx.minimum_spanning_edges(G, algorithm='prim')
+
+nx.draw_networkx(mse)
+
+edge_list = list(mse)
+nx.draw(edge_list)
+
+list(G)
+
+y = nx.complete_graph(mst)
+nx.draw_networkx(mst)
+
+
+# prim, boruvka or kruskal
+
+'''
 
