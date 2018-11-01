@@ -117,8 +117,8 @@ def MST_plot(P,plot_path,indep_var):
     plt.xlabel(indep_var)
     ax = plt.gca()
     ax.set_aspect('equal')
-    ax.set_xlim([0, 100])
-    ax.set_ylim([100, 0])
+    ax.set_xlim([-5, 105])
+    ax.set_ylim([105, -5])
     
     # filepath for plot image
     figure_path = plot_path + indep_var.replace("/", "-") + '.png'
