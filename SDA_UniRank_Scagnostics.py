@@ -59,7 +59,7 @@ pairs = sns.pairplot(df_clean, diag_kind="kde", markers="+",plot_kws=dict(s=50, 
 # Found Code on:
 # http://peekaboo-vision.blogspot.com/2012/02/simplistic-minimum-spanning-tree-in.html
 # Author: Andreas Mueller
-# Slightly Modified for this Project by Peter and Lars
+# Modified for this Project by Lars
 
 def minimum_spanning_tree(X, copy_X=True):
     """X are edge weights of fully connected graph"""
@@ -94,6 +94,18 @@ def minimum_spanning_tree(X, copy_X=True):
 
    
 def MST_plot(P,plot_path,indep_var):
+    # Normalise Independent Variable between 0 and 100 if not rank or percentage
+    if 'rank' in indep_var:
+        print(indep_var)
+    elif '%' in indep_var:
+        print(indep_var)
+    else:
+        X_min = np.amin(P[:,0])
+        X_max = np.amax(P[:,0])
+        P[:,0] = (P[:,0] - X_min) / (X_max - X_min) * 100
+        indep_var = 'normalised ' + indep_var
+        print(indep_var)
+    
     X = squareform(pdist(P))
     edge_list = minimum_spanning_tree(X)
     
@@ -102,9 +114,11 @@ def MST_plot(P,plot_path,indep_var):
         i, j = edge
         plt.plot([P[i, 0], P[j, 0]], [P[i, 1], P[j, 1]], c='r')
     
-    plt.ylabel(indep_var)
+    plt.xlabel(indep_var)
     ax = plt.gca()
     ax.set_aspect('equal')
+    ax.set_xlim([0, 100])
+    ax.set_ylim([0, 100])
     
     # filepath for plot image
     figure_path = plot_path + indep_var.replace("/", "-") + '.png'
@@ -121,14 +135,9 @@ nr_col = size[1]           # nr of columns
 for c in range (1,nr_col):
     # Col Name
     indep_var = df_clean.columns[c]
-    
-    # Normalise Idnependent Variable between 0 and 100
-    df_clean[indep_var] = (df_clean[indep_var] - df_clean[indep_var].min()) / \
-                          (df_clean[indep_var].max() - df_clean[indep_var].min()) \
-                          * 100
-    
+      
     # Prepare Dependendt and Independent Variable in 2 Column Vector
-    M = np.array(df_clean[[year,indep_var]])
+    M = np.array(df_clean[[indep_var,year]])
 
     # Run MST Plot
     MST_plot(M,plot_path,indep_var)
@@ -175,6 +184,12 @@ c_table.savefig(path)
 #        x2 = M[q,1]
 #        y2 = M[q,0]
 #        D[p,q] = np.sqrt(np.square(x1 - x2) + np.square(y1 - y2))
+#
+#
+## Normalise Idnependent Variable between 0 and 100
+#df_clean[indep_var] = (df_clean[indep_var] - df_clean[indep_var].min()) / \
+#                      (df_clean[indep_var].max() - df_clean[indep_var].min()) \
+#                      * 100
 
 
 
