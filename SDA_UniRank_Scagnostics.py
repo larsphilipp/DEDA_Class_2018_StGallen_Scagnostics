@@ -11,11 +11,14 @@
 ## Packages used
 import pandas as pd
 import numpy as np
-import time 
-import datetime
 from scipy.spatial.distance import pdist, squareform
+from scipy.spatial import ConvexHull
 import matplotlib.pyplot as plt
+import statsmodels.api as sm
 import os
+
+## Year of the Ranking
+year = "2018"
 
 #-------------------------------------------------------------
 
@@ -25,33 +28,26 @@ import os
 
 ## Data Import and Cleansing
 # WD
-path = os.path.dirname(os.path.realpath("__file__"))
+path = os.path.dirname(os.path.realpath("__file__")) + '\\'
 plot_path = path + '\\MST_Plots\\'
-file ='/mmgmt18.csv'
+hull_path = path + '\\Hull_Plots\\'
+ols_path = path + '\\OLS_Summaries\\'
+file ='mmgmt18.csv'
+
+# Ranking olumn name
+Ranking_Col = "FT_Rank " + year
 
 # Import into Data Frame
-data = pd.read_csv(path + '/mmgmt18.csv',encoding='ISO-8859-1', delimiter = ";")
-df   = pd.DataFrame(data)
+data = pd.read_csv(path + file,encoding='ISO-8859-1', delimiter = ";")
+df   = pd.DataFrame(data).rename(columns={year: Ranking_Col})
 
 # Drop Columns with Text and NAN
 df_num   = df.select_dtypes(['number'])
 df_clean = df_num.dropna(axis=1)
 
-# drop year col -does not work
-year = "2018"
-#df_indep = df_number.copy()
-#df_indep.drop(year, axis=1)
-
-#-------------------------------------------------------------
-
-## All scatter plots with ranking on Y axis and independent variable on X
-column_names = df_clean.columns
-for i in column_names:
-    print("\n","\n",i)
-    p = sns.relplot(y='2018',x=i,data = df)
-
-# Pair Plot
-pairs = sns.pairplot(df_clean, diag_kind="kde", markers="+",plot_kws=dict(s=50, edgecolor="b", linewidth=1),diag_kws=dict(shade=True))
+# Shape of the cleaned data matrix
+size = df_clean.shape   # size of dataframe
+nr_col = size[1]        # nr of columns
 
 #-------------------------------------------------------------
 
@@ -106,9 +102,11 @@ def MST_plot(P,plot_path,indep_var):
         indep_var = 'normalised ' + indep_var
         print(indep_var)
     
+    # MST Edges
     X = squareform(pdist(P))
     edge_list = minimum_spanning_tree(X)
     
+    # MST scatter plot
     plt.scatter(P[:, 0], P[:, 1])
     for edge in edge_list:
         i, j = edge
@@ -125,48 +123,159 @@ def MST_plot(P,plot_path,indep_var):
     plt.savefig(figure_path)
     
     plt.show()
-   
+    
+# Euclidean Distances: Alternative to squareform(pdist(P)) 
+# Numpy Matrix with dependent and independent variable
+def Eukl_Dist(M):   
+    size = M.shape      # size of the array
+    n = size[0]         # number of observations in M / dots in plot
+    D = np.zeros((n,n)) # assign space for Euclidean Distances Matrix
+    
+    ## Create Euclidean Distances Matrix
+    for p in range(0,n):
+        x1 = M[p,1]
+        y1 = M[p,0]
+        for q in range(0,n):
+            x2 = M[q,1]
+            y2 = M[q,0]
+            D[p,q] = np.sqrt(np.square(x1 - x2) + np.square(y1 - y2))
+    
+    return D
+
+
+# Shoelace formula for are of Polygon
+# http://code.activestate.com/recipes/578047-area-of-polygon-using-shoelace-formula/
+def PolygonArea(corners):
+    n = len(corners) # of corners
+    area = 0.0
+    for i in range(n):
+        j = (i + 1) % n
+        area += corners[i][0] * corners[j][1]
+        area -= corners[j][0] * corners[i][1]
+    area = abs(area) / 2.0
+    return area
+        
 #-------------------------------------------------------------
 
 ## Minimal Spanning Tree Plots for our Data Sets
-size = df_clean.shape   # size of dataframe
-nr_col = size[1]           # nr of columns
-
 for c in range (1,nr_col):
     # Col Name
     indep_var = df_clean.columns[c]
       
     # Prepare Dependendt and Independent Variable in 2 Column Vector
-    M = np.array(df_clean[[indep_var,year]])
+    M = np.array(df_clean[[indep_var,Ranking_Col]])
 
     # Run MST Plot
     MST_plot(M,plot_path,indep_var)
     
+#-------------------------------------------------------------
+
+## Convex Hull of our Data Sets
+Convex_Hull_sum = np.zeros((nr_col)) 
+Convex_Hull_area = np.zeros((nr_col))   
+    
+for c in range (1,nr_col):
+    # Col Name
+    indep_var = df_clean.columns[c]
+      
+    # Prepare Dependendt and Independent Variable in 2 Column Vector
+    M = np.array(df_clean[[indep_var,Ranking_Col]])
+    
+    if 'rank' in indep_var:
+        print(indep_var)
+    elif '%' in indep_var:
+        print(indep_var)
+    else:
+        X_min = np.amin(M[:,0])
+        X_max = np.amax(M[:,0])
+        M[:,0] = (M[:,0] - X_min) / (X_max - X_min) * 100
+        indep_var = 'normalised ' + indep_var
+        print(indep_var)
+    
+    # Convex Hull
+    hull = ConvexHull(M)
+    
+    # Coordinates of the Convex Hull
+    cx = np.array(hull.points[hull.vertices,0])
+    cy = np.array(hull.points[hull.vertices,1])
+    Cord = np.column_stack([cy,cx])
+    
+    # Euklidean Distances Matrix   
+    D = Eukl_Dist(Cord)
+    
+    # Sum of all edges of the Convex Hull
+    for i in range(0,D.shape[1]-1):
+        Convex_Hull_sum[c] = Convex_Hull_sum[c] + D[i,i+1]
+    
+    # Area/Surface of the Alpha Space
+    Convex_Hull_area[c] = PolygonArea(Cord)
+    
+    # Plot Convex Hull
+    plt.plot(M[:,0], M[:,1], 'o')
+    plt.xlabel(indep_var)
+    ax = plt.gca()
+    ax.set_aspect('equal')
+    ax.set_xlim([-5, 105])
+    ax.set_ylim([105, -5])
+    
+    for simplex in hull.simplices:
+        plt.plot(M[simplex, 0], M[simplex, 1], 'k-')
+    
+    figure_path = hull_path + indep_var.replace("/", "-") + '.png'
+    plt.savefig(figure_path)
+
+    
+
+#-------------------------------------------------------------
+
+## TO DO: ALpha Shape resp Concave Hull
 
 #-------------------------------------------------------------
     
-# TO DO: OLS
+## Linear Regression: Ordinary Least Square
+for c in range (1,nr_col):
+    # Col Name
+    indep_var = df_clean.columns[c]
+    
+    # Variables 
+    X = df_clean[indep_var]
+    X = sm.add_constant(X)
+    Y = df_clean[Ranking_Col]
+    
+    # OLS regression
+    model = sm.OLS(Y,X)
+    rm = model.fit()
+    
+    # Output
+    print (rm.params)
+    print (rm.summary())
+    
+    # Save Output
+    plt.rc('figure', figsize=(12, 7))
+    plt.text(0.01, 0.05, str(rm.summary()), {'fontsize': 10}, fontproperties = 'monospace') # approach improved by OP -> monospace!
+    plt.axis('off')
+    plt.tight_layout()
+    plt.savefig(ols_path + 'OLS_' + indep_var.replace("/", "-") + '.png')
+
+
 
 #-------------------------------------------------------------
-
-
-## TO FIX: savefig ##
-cor_plot = plt.matshow(df.corr(),cmap = "RdYlGn")
-plt.show()
-
-correlation_table = df.corr()
-c_table  = sns.heatmap(correlation_table, 
-            xticklabels=correlation_table.columns.values,
-            yticklabels=correlation_table.columns.values,
-            cmap = "RdYlGn")
-
-c_table.savefig(path)
-
 #-------------------------------------------------------------
 
 ####################
 ##### not used #####
 ####################
+
+## All scatter plots with ranking on Y axis and independent variable on X
+#column_names = df_clean.columns
+#for i in column_names:
+#    print("\n","\n",i)
+#    p = sns.relplot(y='2018',x=i,data = df)
+#
+## Pair Plot
+#pairs = sns.pairplot(df_clean, diag_kind="kde", markers="+",plot_kws=dict(s=50, edgecolor="b", linewidth=1),diag_kws=dict(shade=True))
+
+#-------------------------------------------------------------
 
 ### Euclidean Distances: Alternative to squareform(pdist(P)) 
 ### Numpy Matrix with dependent and independent variable
@@ -190,6 +299,20 @@ c_table.savefig(path)
 #df_clean[indep_var] = (df_clean[indep_var] - df_clean[indep_var].min()) / \
 #                      (df_clean[indep_var].max() - df_clean[indep_var].min()) \
 #                      * 100
+#
+#-------------------------------------------------------------
+#
+### TO FIX: savefig ##
+#cor_plot = plt.matshow(df.corr(),cmap = "RdYlGn")
+#plt.show()
+#
+#correlation_table = df.corr()
+#c_table  = sns.heatmap(correlation_table, 
+#            xticklabels=correlation_table.columns.values,
+#            yticklabels=correlation_table.columns.values,
+#            cmap = "RdYlGn")
+##TO FIX: savefig
+# c_table.savefig(path)
 
 
 
