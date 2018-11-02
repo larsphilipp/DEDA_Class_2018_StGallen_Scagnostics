@@ -154,7 +154,23 @@ def PolygonArea(corners):
         area -= corners[j][0] * corners[i][1]
     area = abs(area) / 2.0
     return area
-        
+
+
+def Hull_Plot(Cord,M,hull_path,indep_var):
+    plt.plot(M[:,0], M[:,1], 'o')
+    plt.xlabel(indep_var)
+    axh = plt.gca()
+    axh.set_aspect('equal')
+    axh.set_xlim([-5, 105])
+    axh.set_ylim([105, -5])
+    
+    for simplex in hull.simplices:
+        plt.plot(M[simplex, 0], M[simplex, 1], 'k-')
+    
+    figure_path = hull_path + indep_var.replace("/", "-") + '.png'
+    plt.savefig(figure_path)
+    hull.close()
+
 #-------------------------------------------------------------
 
 ## Minimal Spanning Tree Plots for our Data Sets
@@ -171,59 +187,53 @@ for c in range (1,nr_col):
 #-------------------------------------------------------------
 
 ## Convex Hull of our Data Sets
-Convex_Hull_sum = np.zeros((nr_col)) 
-Convex_Hull_area = np.zeros((nr_col))   
+#Convex_Hull_sum = np.zeros((nr_col)) 
+#Convex_Hull_area = np.zeros((nr_col))   
     
-for c in range (1,nr_col):
-    # Col Name
-    indep_var = df_clean.columns[c]
-      
-    # Prepare Dependendt and Independent Variable in 2 Column Vector
-    M = np.array(df_clean[[indep_var,Ranking_Col]])
-    
-    if 'rank' in indep_var:
-        print(indep_var)
-    elif '%' in indep_var:
-        print(indep_var)
-    else:
-        X_min = np.amin(M[:,0])
-        X_max = np.amax(M[:,0])
-        M[:,0] = (M[:,0] - X_min) / (X_max - X_min) * 100
-        indep_var = 'normalised ' + indep_var
-        print(indep_var)
-    
-    # Convex Hull
-    hull = ConvexHull(M)
-    
-    # Coordinates of the Convex Hull
-    cx = np.array(hull.points[hull.vertices,0])
-    cy = np.array(hull.points[hull.vertices,1])
-    Cord = np.column_stack([cy,cx])
-    
-    # Euklidean Distances Matrix   
-    D = Eukl_Dist(Cord)
-    
-    # Sum of all edges of the Convex Hull
-    for i in range(0,D.shape[1]-1):
-        Convex_Hull_sum[c] = Convex_Hull_sum[c] + D[i,i+1]
-    
-    # Area/Surface of the Alpha Space
-    Convex_Hull_area[c] = PolygonArea(Cord)
-    
-    # Plot Convex Hull
-    plt.plot(M[:,0], M[:,1], 'o')
-    plt.xlabel(indep_var)
-    ax = plt.gca()
-    ax.set_aspect('equal')
-    ax.set_xlim([-5, 105])
-    ax.set_ylim([105, -5])
-    
-    for simplex in hull.simplices:
-        plt.plot(M[simplex, 0], M[simplex, 1], 'k-')
-    
-    figure_path = hull_path + indep_var.replace("/", "-") + '.png'
-    plt.savefig(figure_path)
+#for c in range(0,nr_col):
 
+c = 2
+
+# Col Name
+indep_var = df_clean.columns[c]
+  
+# Prepare Dependendt and Independent Variable in 2 Column Vector
+M = np.array(df_clean[[indep_var,Ranking_Col]])
+
+if 'rank' in indep_var:
+    print(indep_var)
+elif '%' in indep_var:
+    print(indep_var)
+else:
+    X_min = np.amin(M[:,0])
+    X_max = np.amax(M[:,0])
+    M[:,0] = (M[:,0] - X_min) / (X_max - X_min) * 100
+    indep_var = 'normalised ' + indep_var
+    print(indep_var)
+
+# Convex Hull
+hull = ConvexHull(M)
+
+# Coordinates of the Convex Hull
+cx = np.array(hull.points[hull.vertices,0])
+cy = np.array(hull.points[hull.vertices,1])
+Cord = np.column_stack([cy,cx])
+
+# Euklidean Distances Matrix   
+D = Eukl_Dist(Cord)
+
+# Sum of all edges of the Convex Hull
+for i in range(0,D.shape[1]-1):
+    Convex_Hull_sum[c] = Convex_Hull_sum[c] + D[i,i+1]
+
+# Area/Surface of the Alpha Space
+Convex_Hull_area[c] = PolygonArea(Cord)
+
+# Plot Convex Hull
+Hull_Plot(M,hull_path,indep_var)
+    
+    
+ 
     
 
 #-------------------------------------------------------------
