@@ -22,14 +22,3 @@ for year in years:
     output_dict[year] = output
     
 print(output_dict)  
-
-
-df = output_dict["2018"]
-
-column_names = df.columns
-column_names
-# ----------------------------------------------------------------------------
-
-# clean column names?
-
-#df.to_csv(path_or_buf= '/Users/PeterlaCour/documents/MIQEF/SDA_UniRanking/2018 Scrape.csv')
