@@ -112,10 +112,10 @@ def MST_plot(P,plot_path,indep_var):
         i, j = edge
         plt.plot([P[i, 0], P[j, 0]], [P[i, 1], P[j, 1]], c='r')
     
-    plt.xlabel(indep_var)
+    plt.xlabel(indep_var, fontsize=18)
     ax = plt.gca()
     ax.set_aspect('equal')
-    ax.set_xlim([-5, 105])
+    ax.set_xlim([-5, 105], fontsize=18)
     ax.set_ylim([105, -5])
     
     # filepath for plot image
