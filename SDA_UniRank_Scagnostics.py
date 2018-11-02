@@ -15,6 +15,8 @@ from scipy.spatial.distance import pdist, squareform
 from scipy.spatial import ConvexHull
 import matplotlib.pyplot as plt
 import statsmodels.api as sm
+from bs4 import BeautifulSoup
+import requests
 import os
 
 ## Year of the Ranking
@@ -22,14 +24,15 @@ year = "2018"
 
 #-------------------------------------------------------------
 
-# Web Scraping: ATTENTION FORMAT DIFFERENT IN EXCEL THAN MANUAL DOWNLOAD - TO BE FIXED
-import requests
-from bs4 import BeautifulSoup
-import pandas as pd
-
+## Web Scraping: ATTENTION FORMAT DIFFERENT IN EXCEL THAN MANUAL DOWNLOAD - TO BE FIXED
+# Url
 url_wo_year='http://rankings.ft.com/businessschoolrankings/masters-in-management-'
+
+# Years
 years = ['2014','2015','2016','2017','2018']
+
 output_dict = {}
+
 for year in years:
     url = url_wo_year + year
     page = requests.get(url)
@@ -75,13 +78,10 @@ nr_col = size[1]        # nr of columns
 #-------------------------------------------------------------
 
 ## Definition of Functions
-# Found Code on:
-# http://peekaboo-vision.blogspot.com/2012/02/simplistic-minimum-spanning-tree-in.html
-# Author: Andreas Mueller
-# Modified for this Project by Lars
-
 def minimum_spanning_tree(X, copy_X=True):
-    """X are edge weights of fully connected graph"""
+    # Found Code on:
+    # http://peekaboo-vision.blogspot.com/2012/02/simplistic-minimum-spanning-tree-in.html
+    # Author: Andreas Mueller
     if copy_X:
         X = X.copy()
  
@@ -113,6 +113,7 @@ def minimum_spanning_tree(X, copy_X=True):
 
    
 def MST_plot(P,plot_path,indep_var):
+    # Basic Ideas from Author Andreas Mueller; Modified for this Project by Lars
     # Normalise Independent Variable between 0 and 100 if not rank or percentage
     if 'rank' in indep_var:
         print(indep_var)
@@ -147,9 +148,10 @@ def MST_plot(P,plot_path,indep_var):
     
     plt.show()
     
-# Euclidean Distances: Alternative to squareform(pdist(P)) 
-# Numpy Matrix with dependent and independent variable
-def Eukl_Dist(M):   
+    
+def Eukl_Dist(M):
+    # Euclidean Distances: Alternative to squareform(pdist(P)) 
+    # Numpy Matrix with dependent and independent variable
     size = M.shape      # size of the array
     n = size[0]         # number of observations in M / dots in plot
     D = np.zeros((n,n)) # assign space for Euclidean Distances Matrix
@@ -215,7 +217,7 @@ for c in range (1,nr_col):
     
 #for c in range(0,nr_col):
 
-c = 2#COLNUMBER
+c = #COLNUMBER
 
 # Col Name
 indep_var = df_clean.columns[c]
@@ -291,6 +293,7 @@ plt.tight_layout()
 plt.savefig(ols_path + 'OLS_' + indep_var.replace("/", "-") + '.png', bbox_inches='tight')
 
 
+<<<<<<< HEAD
 # ------------------------------------------------------------
 
 
@@ -495,13 +498,13 @@ p = concave(tuple_array)
 
 
 
+=======
+>>>>>>> 8f7ddca39045615008c9cba20a87224cc4de3071
 #-------------------------------------------------------------
-#-------------------------------------------------------------
-
 ####################
 ##### not used #####
 ####################
-
+#-------------------------------------------------------------
 ## All scatter plots with ranking on Y axis and independent variable on X
 #column_names = df_clean.columns
 #for i in column_names:
@@ -512,24 +515,6 @@ p = concave(tuple_array)
 #pairs = sns.pairplot(df_clean, diag_kind="kde", markers="+",plot_kws=dict(s=50, edgecolor="b", linewidth=1),diag_kws=dict(shade=True))
 
 #-------------------------------------------------------------
-
-### Euclidean Distances: Alternative to squareform(pdist(P)) 
-### Numpy Matrix with dependent and independent variable
-#M = np.array(df[["2018","Career progress rank"]])
-#
-#size = M.shape      # size of the array
-#n = size[0]         # number of observations in M / dots in plot
-#D = np.zeros((n,n)) # assign space for Euclidean Distances Matrix
-#
-### Create Euclidean Distances Matrix
-#for p in range(0,n):
-#    x1 = M[p,1]
-#    y1 = M[p,0]
-#    for q in range(0,n):
-#        x2 = M[q,1]
-#        y2 = M[q,0]
-#        D[p,q] = np.sqrt(np.square(x1 - x2) + np.square(y1 - y2))
-#
 #
 ## Normalise Idnependent Variable between 0 and 100
 #df_clean[indep_var] = (df_clean[indep_var] - df_clean[indep_var].min()) / \
@@ -550,8 +535,6 @@ p = concave(tuple_array)
 ##TO FIX: savefig
 # c_table.savefig(path)
 
-
-
-
-
+#-------------------------------------------------------------
+## END
 #-------------------------------------------------------------
