@@ -22,8 +22,31 @@ year = "2018"
 
 #-------------------------------------------------------------
 
-# TO DO: Web Mining
+# Web Scraping: ATTENTION FORMAT DIFFERENT IN EXCEL THAN MANUAL DOWNLOAD - TO BE FIXED
+import requests
+from bs4 import BeautifulSoup
+import pandas as pd
 
+url_wo_year='http://rankings.ft.com/businessschoolrankings/masters-in-management-'
+years = ['2014','2015','2016','2017','2018']
+output_dict = {}
+for year in years:
+    url = url_wo_year + year
+    page = requests.get(url)
+    soup = BeautifulSoup(page.content, 'html.parser')
+    rankings_table = soup.find(id = "rankingstable")
+    rankings_table.prettify()
+    output = pd.read_html(url)
+    k = 0
+    for i in output[0].columns:
+        if "Unnamed" in i:
+            output[0].drop("Unnamed: " + str(k),axis =1, inplace = True)
+            k += 1
+    output = output[0][:-1]
+    
+    output_dict[year] = output
+    
+print(output_dict)
 #-------------------------------------------------------------
 
 ## Data Import and Cleansing
@@ -115,12 +138,12 @@ def MST_plot(P,plot_path,indep_var):
     plt.xlabel(indep_var, fontsize=18)
     ax = plt.gca()
     ax.set_aspect('equal')
-    ax.set_xlim([-5, 105], fontsize=18)
+    ax.set_xlim([-5, 105])
     ax.set_ylim([105, -5])
     
     # filepath for plot image
     figure_path = plot_path + indep_var.replace("/", "-") + '.png'
-    plt.savefig(figure_path)
+    plt.savefig(figure_path, bbox_inches='tight')
     
     plt.show()
     
@@ -158,7 +181,7 @@ def PolygonArea(corners):
 
 def Hull_Plot(M,hull_path,indep_var):
     plt.plot(M[:,0], M[:,1], 'o')
-    plt.xlabel(indep_var)
+    plt.xlabel(indep_var, fontsize=18)
     axh = plt.gca()
     axh.set_aspect('equal')
     axh.set_xlim([-5, 105])
@@ -168,7 +191,7 @@ def Hull_Plot(M,hull_path,indep_var):
         plt.plot(M[simplex, 0], M[simplex, 1], 'k-')
     
     figure_path = hull_path + indep_var.replace("/", "-") + '.png'
-    plt.savefig(figure_path)
+    plt.savefig(figure_path, bbox_inches='tight')
     hull.close()
 
 #-------------------------------------------------------------
@@ -192,7 +215,7 @@ for c in range (1,nr_col):
     
 #for c in range(0,nr_col):
 
-c = #COLNUMBER
+c = 2#COLNUMBER
 
 # Col Name
 indep_var = df_clean.columns[c]
@@ -265,7 +288,7 @@ plt.rc('figure', figsize=(12, 7))
 plt.text(0.01, 0.05, str(rm.summary()), {'fontsize': 10}, fontproperties = 'monospace') # approach improved by OP -> monospace!
 plt.axis('off')
 plt.tight_layout()
-plt.savefig(ols_path + 'OLS_' + indep_var.replace("/", "-") + '.png')
+plt.savefig(ols_path + 'OLS_' + indep_var.replace("/", "-") + '.png', bbox_inches='tight')
 
 
 
