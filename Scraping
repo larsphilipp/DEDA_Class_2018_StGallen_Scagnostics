@@ -22,5 +22,3 @@ for year in years:
     output_dict[year] = output
     
 print(output_dict)  
-
-df = output_dict["2018"]
