@@ -156,7 +156,7 @@ def PolygonArea(corners):
     return area
 
 
-def Hull_Plot(Cord,M,hull_path,indep_var):
+def Hull_Plot(M,hull_path,indep_var):
     plt.plot(M[:,0], M[:,1], 'o')
     plt.xlabel(indep_var)
     axh = plt.gca()
@@ -192,7 +192,7 @@ for c in range (1,nr_col):
     
 #for c in range(0,nr_col):
 
-c = 2
+c = #COLNUMBER
 
 # Col Name
 indep_var = df_clean.columns[c]
@@ -222,19 +222,18 @@ Cord = np.column_stack([cy,cx])
 # Euklidean Distances Matrix   
 D = Eukl_Dist(Cord)
 
+Convex_Hull_sum = 0
 # Sum of all edges of the Convex Hull
 for i in range(0,D.shape[1]-1):
-    Convex_Hull_sum[c] = Convex_Hull_sum[c] + D[i,i+1]
+    #Convex_Hull_sum[c] = Convex_Hull_sum[c] + D[i,i+1]
+    Convex_Hull_sum = Convex_Hull_sum + D[i,i+1]
 
 # Area/Surface of the Alpha Space
-Convex_Hull_area[c] = PolygonArea(Cord)
+#Convex_Hull_area[c] = PolygonArea(Cord)
+Convex_Hull_area = PolygonArea(Cord)
 
 # Plot Convex Hull
-Hull_Plot(M,hull_path,indep_var)
-    
-    
- 
-    
+Hull_Plot(M,hull_path,indep_var)  
 
 #-------------------------------------------------------------
 
@@ -243,29 +242,30 @@ Hull_Plot(M,hull_path,indep_var)
 #-------------------------------------------------------------
     
 ## Linear Regression: Ordinary Least Square
-for c in range (1,nr_col):
-    # Col Name
-    indep_var = df_clean.columns[c]
-    
-    # Variables 
-    X = df_clean[indep_var]
-    X = sm.add_constant(X)
-    Y = df_clean[Ranking_Col]
-    
-    # OLS regression
-    model = sm.OLS(Y,X)
-    rm = model.fit()
-    
-    # Output
-    print (rm.params)
-    print (rm.summary())
-    
-    # Save Output
-    plt.rc('figure', figsize=(12, 7))
-    plt.text(0.01, 0.05, str(rm.summary()), {'fontsize': 10}, fontproperties = 'monospace') # approach improved by OP -> monospace!
-    plt.axis('off')
-    plt.tight_layout()
-    plt.savefig(ols_path + 'OLS_' + indep_var.replace("/", "-") + '.png')
+c = #COLNUMBER
+
+# Col Name
+indep_var = df_clean.columns[c]
+
+# Variables 
+X = df_clean[indep_var]
+X = sm.add_constant(X)
+Y = df_clean[Ranking_Col]
+
+# OLS regression
+model = sm.OLS(Y,X)
+rm = model.fit()
+
+# Output
+print (rm.params)
+print (rm.summary())
+
+# Save Output
+plt.rc('figure', figsize=(12, 7))
+plt.text(0.01, 0.05, str(rm.summary()), {'fontsize': 10}, fontproperties = 'monospace') # approach improved by OP -> monospace!
+plt.axis('off')
+plt.tight_layout()
+plt.savefig(ols_path + 'OLS_' + indep_var.replace("/", "-") + '.png')
 
 
 
