@@ -14,53 +14,26 @@ import numpy as np
 from scipy.spatial.distance import pdist, squareform
 from scipy.spatial import ConvexHull
 import matplotlib.pyplot as plt
-import statsmodels.api as sm
-from bs4 import BeautifulSoup
-import requests
 import os
-
-## Year of the Ranking
-year = "2018"
 
 #-------------------------------------------------------------
 
-## Web Scraping: ATTENTION FORMAT DIFFERENT IN EXCEL THAN MANUAL DOWNLOAD - TO BE FIXED
-# Url
-url_wo_year='http://rankings.ft.com/businessschoolrankings/masters-in-management-'
+## Web Scraping: ATTENTION FORMAT DIFFERENT IN EXCEL THAN MANUAL DOWNLOAD
+## Manually downloaded File in same Folder: mmgmt18.csv
+#url_wo_year='http://rankings.ft.com/businessschoolrankings/masters-in-management-'
 
-# Years
-years = ['2014','2015','2016','2017','2018']
-
-output_dict = {}
-
-for year in years:
-    url = url_wo_year + year
-    page = requests.get(url)
-    soup = BeautifulSoup(page.content, 'html.parser')
-    rankings_table = soup.find(id = "rankingstable")
-    rankings_table.prettify()
-    output = pd.read_html(url)
-    k = 0
-    for i in output[0].columns:
-        if "Unnamed" in i:
-            output[0].drop("Unnamed: " + str(k),axis =1, inplace = True)
-            k += 1
-    output = output[0][:-1]
-    
-    output_dict[year] = output
-    
-print(output_dict)
 #-------------------------------------------------------------
 
 ## Data Import and Cleansing
 # WD
 path = os.path.dirname(os.path.realpath("__file__")) + '\\'
-plot_path = path + '\\MST_Plots\\'
-hull_path = path + '\\Hull_Plots\\'
+mst_path = path + '\\MST_Plots\\'
+convex_hull_path = path + '\\Hull_Plots\\'
 ols_path = path + '\\OLS_Summaries\\'
 file ='mmgmt18.csv'
 
-# Ranking olumn name
+# Ranking column name
+year        = "2018"
 Ranking_Col = "FT_Rank " + year
 
 # Import into Data Frame
@@ -72,13 +45,14 @@ df_num   = df.select_dtypes(['number'])
 df_clean = df_num.dropna(axis=1)
 
 # Shape of the cleaned data matrix
-size = df_clean.shape   # size of dataframe
-nr_col = size[1]        # nr of columns
+size   = df_clean.shape     # size of dataframe
+nr_col = size[1]            # nr of columns
 
 #-------------------------------------------------------------
 
 ## Definition of Functions
-def minimum_spanning_tree(X, copy_X=True):
+
+def Minimum_Spanning_Tree(X, copy_X=True):
     # Found Code on:
     # http://peekaboo-vision.blogspot.com/2012/02/simplistic-minimum-spanning-tree-in.html
     # Author: Andreas Mueller
@@ -87,7 +61,7 @@ def minimum_spanning_tree(X, copy_X=True):
  
     if X.shape[0] != X.shape[1]:
         raise ValueError("X needs to be square matrix of edge weights")
-    n_vertices = X.shape[0]
+    n_vertices     = X.shape[0]
     spanning_edges = []
      
     # initialize with node 0:                                                                                         
@@ -112,23 +86,11 @@ def minimum_spanning_tree(X, copy_X=True):
     return np.vstack(spanning_edges)
 
    
-def MST_plot(P,plot_path,indep_var):
-    # Basic Ideas from Author Andreas Mueller; Modified for this Project by Lars
-    # Normalise Independent Variable between 0 and 100 if not rank or percentage
-    if 'rank' in indep_var:
-        print(indep_var)
-    elif '%' in indep_var:
-        print(indep_var)
-    else:
-        X_min = np.amin(P[:,0])
-        X_max = np.amax(P[:,0])
-        P[:,0] = (P[:,0] - X_min) / (X_max - X_min) * 100
-        indep_var = 'normalised ' + indep_var
-        print(indep_var)
-    
+def MST_Plot(P,plot_path,indep_var):
+    # Basic Ideas from Author Andreas Mueller; Modified for this Project by Lars 
     # MST Edges
     X = squareform(pdist(P))
-    edge_list = minimum_spanning_tree(X)
+    edge_list = Minimum_Spanning_Tree(X)
     
     # MST scatter plot
     plt.scatter(P[:, 0], P[:, 1])
@@ -146,15 +108,73 @@ def MST_plot(P,plot_path,indep_var):
     figure_path = plot_path + indep_var.replace("/", "-") + '.png'
     plt.savefig(figure_path, bbox_inches='tight')
     
+    # Use close or show command!
+    #plt.close()
     plt.show()
+
+  
+def Rescale_Indep_Var(M,indep_var):
+    # Rescale Independent Variable between 0 and 100 if not rank or percentage
+    if 'rank' in indep_var:
+        print(indep_var, "is on a scale from 1 to 100.")
+    elif '%' in indep_var:
+        print(indep_var, "is on a scale from 0 to 100.")
+    else:
+        X_min = np.amin(M[:,0])
+        X_max = np.amax(M[:,0])
+        M[:,0] = (M[:,0] - X_min) / (X_max - X_min) * 100
+        indep_var = 'normalised ' + indep_var
+        print(indep_var)
+    
+    return M
+    
+
+def Convex_Hull(M,hull_path,indep_var):
+    # Convex Hull
+    hull = ConvexHull(M)
+    
+    # Coordinates of the Convex Hull
+    cx = np.array(hull.points[hull.vertices,0])
+    cy = np.array(hull.points[hull.vertices,1])
+    Cord = np.column_stack([cy,cx])
+    
+    # Euklidean Distances Matrix   
+    D = Eukl_Dist(Cord)
+    
+    Convex_Hull_sum = 0
+    # Sum of all edges of the Convex Hull
+    for i in range(0,D.shape[1]-1):
+        Convex_Hull_sum = Convex_Hull_sum + D[i,i+1]
+    
+    # Area/Surface of the Alpha Space
+    Convex_Hull_area = Polygon_Area(Cord)
+    
+    plt.plot(M[:,0], M[:,1], 'o')
+    plt.xlabel(indep_var, fontsize=18)
+    axh = plt.gca()
+    axh.set_aspect('equal')
+    axh.set_xlim([-5, 105])
+    axh.set_ylim([105, -5])
+    
+    for simplex in hull.simplices:
+        plt.plot(M[simplex, 0], M[simplex, 1], 'k-')
+    
+    figure_path = convex_hull_path + indep_var.replace("/", "-") + '.png'
+    plt.savefig(figure_path, bbox_inches='tight')
+    
+    # Must use close or show command! (to delete background variable)
+    #plt.close()
+    plt.show()
+    
+    return Convex_Hull_sum, Convex_Hull_area
     
     
 def Eukl_Dist(M):
     # Euclidean Distances: Alternative to squareform(pdist(P)) 
     # Numpy Matrix with dependent and independent variable
-    size = M.shape      # size of the array
-    n = size[0]         # number of observations in M / dots in plot
-    D = np.zeros((n,n)) # assign space for Euclidean Distances Matrix
+    size = M.shape         # size of the array
+    n    = size[0]         # number of observations in M / dots in plot
+    D    = np.zeros((n,n)) # assign space for Euclidean Distances Matrix
     
     ## Create Euclidean Distances Matrix
     for p in range(0,n):
@@ -168,9 +188,9 @@ def Eukl_Dist(M):
     return D
 
 
-# Shoelace formula for are of Polygon
-# http://code.activestate.com/recipes/578047-area-of-polygon-using-shoelace-formula/
-def PolygonArea(corners):
+def Polygon_Area(corners):
+    # Shoelace formula for are of Polygon
+    # http://code.activestate.com/recipes/578047-area-of-polygon-using-shoelace-formula/
     n = len(corners) # of corners
     area = 0.0
     for i in range(n):
@@ -181,153 +201,59 @@ def PolygonArea(corners):
     return area
 
 
-def Hull_Plot(M,hull_path,indep_var):
-    plt.plot(M[:,0], M[:,1], 'o')
-    plt.xlabel(indep_var, fontsize=18)
-    axh = plt.gca()
-    axh.set_aspect('equal')
-    axh.set_xlim([-5, 105])
-    axh.set_ylim([105, -5])
-    
-    for simplex in hull.simplices:
-        plt.plot(M[simplex, 0], M[simplex, 1], 'k-')
-    
-    figure_path = hull_path + indep_var.replace("/", "-") + '.png'
-    plt.savefig(figure_path, bbox_inches='tight')
-    hull.close()
-
 #-------------------------------------------------------------
+# Minimum Spanning Tree and Convex Hull
+Convex_Hull_Edges_Sum = np.zeros((nr_col)) 
+Convex_Hull_Area = np.zeros((nr_col)) 
 
-## Minimal Spanning Tree Plots for our Data Sets
+## Minimum Spanning Tree Plots for our Data Sets
 for c in range (1,nr_col):
     # Col Name
     indep_var = df_clean.columns[c]
       
     # Prepare Dependendt and Independent Variable in 2 Column Vector
     M = np.array(df_clean[[indep_var,Ranking_Col]])
-
-    # Run MST Plot
-    MST_plot(M,plot_path,indep_var)
     
-#-------------------------------------------------------------
+    #Rescale Independent Variable if not a Rank or a Percentage
+    Rescale_Indep_Var(M,indep_var)
 
-## Convex Hull of our Data Sets
-#Convex_Hull_sum = np.zeros((nr_col)) 
-#Convex_Hull_area = np.zeros((nr_col))   
+    # Run Plots
+    MST_Plot(M,mst_path,indep_var)
+
+    # Convex Hull includes saving the Plot
+    # Edge Sum and Total Surface
+    # First Entry will be zero as Dependent Variable with itself has no point cloud
+    Convex_Hull_Edges_Sum[c], Convex_Hull_Area[c] = Convex_Hull(M,convex_hull_path,indep_var)
     
-#for c in range(0,nr_col):
-
-c = #COLNUMBER
-
-# Col Name
-indep_var = df_clean.columns[c]
-  
-# Prepare Dependendt and Independent Variable in 2 Column Vector
-M = np.array(df_clean[[indep_var,Ranking_Col]])
-
-if 'rank' in indep_var:
-    print(indep_var)
-elif '%' in indep_var:
-    print(indep_var)
-else:
-    X_min = np.amin(M[:,0])
-    X_max = np.amax(M[:,0])
-    M[:,0] = (M[:,0] - X_min) / (X_max - X_min) * 100
-    indep_var = 'normalised ' + indep_var
-    print(indep_var)
-
-# Convex Hull
-hull = ConvexHull(M)
-
-# Coordinates of the Convex Hull
-cx = np.array(hull.points[hull.vertices,0])
-cy = np.array(hull.points[hull.vertices,1])
-Cord = np.column_stack([cy,cx])
-
-# Euklidean Distances Matrix   
-D = Eukl_Dist(Cord)
-
-Convex_Hull_sum = 0
-# Sum of all edges of the Convex Hull
-for i in range(0,D.shape[1]-1):
-    #Convex_Hull_sum[c] = Convex_Hull_sum[c] + D[i,i+1]
-    Convex_Hull_sum = Convex_Hull_sum + D[i,i+1]
-
-# Area/Surface of the Alpha Space
-#Convex_Hull_area[c] = PolygonArea(Cord)
-Convex_Hull_area = PolygonArea(Cord)
-
-# Plot Convex Hull
-Hull_Plot(M,hull_path,indep_var)  
-
 #-------------------------------------------------------------
 
 ## TO DO: ALpha Shape resp Concave Hull
+## TO DO: Scagnostic Key Figure C for different Shapes (so far only R Package in Java)
 
 #-------------------------------------------------------------
-    
-## Linear Regression: Ordinary Least Square
-c = #COLNUMBER
 
-# Col Name
-indep_var = df_clean.columns[c]
-
-# Variables 
-X = df_clean[indep_var]
-X = sm.add_constant(X)
-Y = df_clean[Ranking_Col]
-
-# OLS regression
-model = sm.OLS(Y,X)
-rm = model.fit()
-
-# Output
-print (rm.params)
-print (rm.summary())
-
-# Save Output
-plt.rc('figure', figsize=(12, 7))
-plt.text(0.01, 0.05, str(rm.summary()), {'fontsize': 10}, fontproperties = 'monospace') # approach improved by OP -> monospace!
-plt.axis('off')
-plt.tight_layout()
-plt.savefig(ols_path + 'OLS_' + indep_var.replace("/", "-") + '.png', bbox_inches='tight')
-
-
-#-------------------------------------------------------------
-####################
-##### not used #####
-####################
-#-------------------------------------------------------------
-## All scatter plots with ranking on Y axis and independent variable on X
-#column_names = df_clean.columns
-#for i in column_names:
-#    print("\n","\n",i)
-#    p = sns.relplot(y='2018',x=i,data = df)
+### Linear Regression: Ordinary Least Square
+#c = #COLNUMBER
 #
-## Pair Plot
-#pairs = sns.pairplot(df_clean, diag_kind="kde", markers="+",plot_kws=dict(s=50, edgecolor="b", linewidth=1),diag_kws=dict(shade=True))
-
-#-------------------------------------------------------------
+## Col Name
+#indep_var = df_clean.columns[c]
 #
-## Normalise Idnependent Variable between 0 and 100
-#df_clean[indep_var] = (df_clean[indep_var] - df_clean[indep_var].min()) / \
-#                      (df_clean[indep_var].max() - df_clean[indep_var].min()) \
-#                      * 100
+## Variables 
+#X = df_clean[indep_var]
+#X = sm.add_constant(X)
+#Y = df_clean[Ranking_Col]
 #
-#-------------------------------------------------------------
+## OLS regression
+#model = sm.OLS(Y,X)
+#rm = model.fit()
 #
-### TO FIX: savefig ##
-#cor_plot = plt.matshow(df.corr(),cmap = "RdYlGn")
-#plt.show()
+## Output
+#print (rm.params)
+#print (rm.summary())
 #
-#correlation_table = df.corr()
-#c_table  = sns.heatmap(correlation_table, 
-#            xticklabels=correlation_table.columns.values,
-#            yticklabels=correlation_table.columns.values,
-#            cmap = "RdYlGn")
-##TO FIX: savefig
-# c_table.savefig(path)
-
-#-------------------------------------------------------------
-## END
-#-------------------------------------------------------------
+## Save Output
+#plt.rc('figure', figsize=(12, 7))
+#plt.text(0.01, 0.05, str(rm.summary()), {'fontsize': 10}, fontproperties = 'monospace') # approach improved by OP -> monospace!
+#plt.axis('off')
+#plt.tight_layout()
+#plt.savefig(ols_path + 'OLS_' + indep_var.replace("/", "-") + '.png', bbox_inches='tight')
