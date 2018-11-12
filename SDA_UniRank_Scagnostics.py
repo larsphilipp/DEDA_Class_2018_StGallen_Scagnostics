@@ -28,9 +28,9 @@ import os
 
 ## Data Import and Cleansing
 
-# WD
-path              = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..'))
-#path             = os.path.dirname(os.path.realpath("__file__")) + '\\'
+# Directories
+#path = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..')) # in case the .py-file is in its own folder
+path              = os.path.dirname(os.path.realpath("__file__")) + '\\' # .py-file in Parent Directory
 mst_path          = path + '\\MST_Plots\\'
 convex_hull_path  = path + '\\Convex_Hull_Plots\\'
 concave_hull_path = path + '\\Concave_Hull_Plots\\'
@@ -110,7 +110,7 @@ def MST_Plot(P,plot_path,indep_var):
     ax.set_ylim([105, -5])
     
     # filepath for plot image
-    figure_path = plot_path + indep_var.replace("/", "-") + '.png'
+    figure_path = plot_path + 'MST_' + indep_var.replace("/", "-") + '.png'
     plt.savefig(figure_path, bbox_inches='tight')
     
     # Use close or show command!
@@ -165,7 +165,7 @@ def Convex_Hull(M,convex_hull_path,indep_var):
     for simplex in hull.simplices:
         plt.plot(M[simplex, 0], M[simplex, 1], 'k-')
     
-    figure_path = convex_hull_path + indep_var.replace("/", "-") + '.png'
+    figure_path = convex_hull_path + 'Convex_Hull_' + indep_var.replace("/", "-") + '.png'
     plt.savefig(figure_path, bbox_inches='tight')
     
     # Must use close or show command! (to delete "background" variable)
@@ -180,7 +180,12 @@ def Concave_Hull(M,alpha_x,alpha_y,concave_hull_path,indep_var):
     de = Delaunay(M)
     plt.triplot(M[:,0], M[:,1], de.simplices.copy())
     plt.plot(M[:,0], M[:,1], 'o')
-    plt.show()
+    plt.xlabel(indep_var, fontsize=18)
+    axh = plt.gca()
+    axh.set_aspect('equal')
+    axh.set_xlim([-5, 105])
+    axh.set_ylim([105, -5])
+    plt.show() # or plt.close()
     
     # Initializing length < alpha
     dec = []
@@ -198,12 +203,17 @@ def Concave_Hull(M,alpha_x,alpha_y,concave_hull_path,indep_var):
         dec.append(tmp)
 
     # Concave Hull PLots
-    plt.scatter(M[:, 0], M[:, 1])
+    plt.plot(M[:,0], M[:,1], 'o')
+    plt.xlabel(indep_var, fontsize=18)
+    axh = plt.gca()
+    axh.set_aspect('equal')
+    axh.set_xlim([-5, 105])
+    axh.set_ylim([105, -5])
     for i in range(0,np.shape(dec)[0]):
         plt.plot([dec[i][0][0], dec[i][1][0]], [dec[i][0][1], dec[i][1][1]], c='r')
         plt.plot([dec[i][0][0], dec[i][2][0]], [dec[i][0][1], dec[i][2][1]], c='r')
         plt.plot([dec[i][1][0], dec[i][2][0]], [dec[i][1][1], dec[i][2][1]], c='r')
-    figure_path = concave_hull_path + indep_var.replace("/", "-") + '.png'
+    figure_path = concave_hull_path + 'Concave_Hull_' + indep_var.replace("/", "-") + '.png'
     plt.savefig(figure_path, bbox_inches='tight')
     
     # Must use close or show command! (to delete "background" variable)
