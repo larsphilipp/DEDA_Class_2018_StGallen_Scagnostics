@@ -2,7 +2,7 @@
 ## Subtitle:        Analysis of Financial Times Rankings for the Master in Management
 ##
 ## Course:          Smart Data Analysis
-## M.A. Students:   Peter De Cour, Lars Stauffenegger, Davide Furlan, Angie Hoang
+## M.A. Students:   Lars Stauffenegger, Peter De Cour
 ## Lecturer:        Professor Wolfgang Haerdle (HU Berlin)
 ## Place, Time:     University of St. Gallen, 29.10.18 - 2.11.18 
 
@@ -13,6 +13,7 @@ import pandas as pd
 import numpy as np
 from scipy.spatial.distance import pdist, squareform
 from scipy.spatial import ConvexHull
+from scipy.spatial import Delaunay
 import matplotlib.pyplot as plt
 import os
 
@@ -26,12 +27,13 @@ import os
 
 ## Data Import and Cleansing
 # WD
-path             = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..'))
+path              = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..'))
 #path             = os.path.dirname(os.path.realpath("__file__")) + '\\'
-mst_path         = path + '\\MST_Plots\\'
-convex_hull_path = path + '\\Hull_Plots\\'
-ols_path         = path + '\\OLS_Summaries\\'
-file             ='\\FT_MiM_Data\\mmgmt18.csv'
+mst_path          = path + '\\MST_Plots\\'
+convex_hull_path  = path + '\\Convex_Hull_Plots\\'
+concave_hull_path = path + '\\Concave_Hull_Plots\\'
+ols_path          = path + '\\OLS_Summaries\\'
+file              ='\\FT_MiM_Data\\mmgmt18.csv'
 
 # Ranking column name
 year        = "2018"
@@ -130,7 +132,7 @@ def Rescale_Indep_Var(M,indep_var):
     return M
     
 
-def Convex_Hull(M,hull_path,indep_var):
+def Convex_Hull(M,convex_hull_path,indep_var):
     # Convex Hull
     hull = ConvexHull(M)
     
@@ -150,6 +152,7 @@ def Convex_Hull(M,hull_path,indep_var):
     # Area/Surface of the Alpha Space
     Convex_Hull_area = Polygon_Area(Cord)
     
+    # Convex Hull Plots
     plt.plot(M[:,0], M[:,1], 'o')
     plt.xlabel(indep_var, fontsize=18)
     axh = plt.gca()
@@ -163,11 +166,47 @@ def Convex_Hull(M,hull_path,indep_var):
     figure_path = convex_hull_path + indep_var.replace("/", "-") + '.png'
     plt.savefig(figure_path, bbox_inches='tight')
     
-    # Must use close or show command! (to delete background variable)
+    # Must use close or show command! (to delete "background" variable)
     #plt.close()
     plt.show()
     
+    # Output Variables
     return Convex_Hull_sum, Convex_Hull_area
+
+def Concave_Hull(M,alpha_x,alpha_y,concave_hull_path,indep_var):
+    # Delauney Triangulation and Plots
+    de = Delaunay(M)
+    plt.triplot(M[:,0], M[:,1], de.simplices.copy())
+    plt.plot(M[:,0], M[:,1], 'o')
+    plt.show()
+    
+    # Initializing length < alpha
+    dec = []
+    a = alpha_x
+    b = alpha_y
+    
+    # Simplex of all triangles with edge length < alpha & Plots
+    for i in de.simplices:
+        tmp = []
+        j = [M[c] for c in i]
+        if abs(j[0][1] - j[1][1])>a or abs(j[1][1]-j[2][1])>a or abs(j[0][1]-j[2][1])>a or abs(j[0][0]-j[1][0])>b or abs(j[1][0]-j[2][0])>b or abs(j[0][0]-j[2][0])>b:
+            continue
+        for c in i:
+            tmp.append(M[c])
+        dec.append(tmp)
+
+    # Concave Hull PLots
+    plt.scatter(M[:, 0], M[:, 1])
+    for i in range(0,np.shape(dec)[0]):
+        plt.plot([dec[i][0][0], dec[i][1][0]], [dec[i][0][1], dec[i][1][1]], c='r')
+        plt.plot([dec[i][0][0], dec[i][2][0]], [dec[i][0][1], dec[i][2][1]], c='r')
+        plt.plot([dec[i][1][0], dec[i][2][0]], [dec[i][1][1], dec[i][2][1]], c='r')
+    figure_path = concave_hull_path + indep_var.replace("/", "-") + '.png'
+    plt.savefig(figure_path, bbox_inches='tight')
+    
+    # Must use close or show command! (to delete "background" variable)
+    #plt.close()
+    plt.show()
     
     
 def Eukl_Dist(M):
@@ -226,13 +265,21 @@ for c in range (1,nr_col):
     # First Entry will be zero as Dependent Variable with itself has no point cloud
     Convex_Hull_Edges_Sum[c], Convex_Hull_Area[c] = Convex_Hull(M,convex_hull_path,indep_var)
     
-#-------------------------------------------------------------
+    # ALpha Shape resp Concave Hull
+    # Alpha is the Maximum distance between two pointsare allowed to have on the x and on the y axis.
+    alpha_x = 40
+    alpha_y = 40
+    Concave_Hull(M,alpha_x,alpha_y,concave_hull_path,indep_var)
+    # TO DO: How to determine alphas?
+    # TO DO: Get rid off edges within Alpha Shape.
+    # TO DO: Determine Edges_Sum and Area.
+       
+#------------------------------------------------------------- 
 
-## TO DO: ALpha Shape resp Concave Hull
 ## TO DO: Scagnostic Key Figure C for different Shapes (so far only R Package in Java)
 
 #-------------------------------------------------------------
-## All scatter plots with ranking on Y axis and independent variable on X
+    
 ### Linear Regression: Ordinary Least Square
 #c = #COLNUMBER
 ## Col Name
@@ -257,3 +304,101 @@ for c in range (1,nr_col):
 #plt.axis('off')
 #plt.tight_layout()
 #plt.savefig(ols_path + 'OLS_' + indep_var.replace("/", "-") + '.png', bbox_inches='tight')
+
+#-------------------------------------------------------------
+
+## TO BE FINALIZED (exceeded the time constraint of this project)
+#
+## To Do: First Steps for Scagnostics Measures
+##find_outliers
+#def find_cutoff(MST):
+#    q25                     = np.quantile(MST,0.25)
+#    q75                     = np.quantile(MST,0.75)
+#    cutoff                  = q75 - 1.5 * (q75 - q25)
+#    
+#    return cutoff
+#    
+#def minimum_edge(tuple_array):
+#    min_edge = []
+#    for o in range(len(tuple_array)):
+#        edges_length = []
+#        m,n = tuple_array[o]
+#            
+#        for l in range(len(tuple_array)):
+#            i,j = tuple_array[l]
+#            edges_length.append(np.sqrt((m-i)**2+(n-j)**2))
+#        edges_length.pop(o)
+#        min_edge.append(min(edges_length))
+#    return min_edge
+#    
+## outliers dictionary
+#def compute_outliers_dict():
+#    outliers_dict = {}
+#    for k in df_clean.columns:
+#        outliers_dict[k] = {}
+#        
+#        tuple_array = []
+#        for i in range(len(df["2018"])):
+#            tuple_array.append((df["2018"][i],df[k][i]))    
+#        points = np.asarray(df[[k,"2018"]])
+#        
+#        me = minimum_edge(tuple_array)
+#        total_edge_length = sum(me)
+#        
+#        school_names =  np.asarray(df["School name"])
+#        me_school   = pd.DataFrame({'ME':me, 'School name':school_names})
+#        me_school.sort_values(by="ME")
+#        
+#        cut = find_cutoff(me_school["ME"])
+#        outliers            = []
+#        outliers_schools    = []
+#        MST_outliers_length = 0
+#    
+#        # find outliers
+#        for i in range(len(points)):
+#            if me[i] < cut:
+#                outliers.append(i)
+#                outliers_schools.append(me_school["School name"][i])
+#                MST_outliers_length += me[i]
+#        # c for outlier
+#        outlier_c = MST_outliers_length /  total_edge_length 
+#        
+#        outliers_dict[k]["Schools"]          = outliers_schools
+#        outliers_dict[k]["Outliers"]         = outliers
+#        outliers_dict[k]["Outlier Measure"]  = outlier_c
+#        outliers_dict[k]["ME"]               = me
+#        outliers_dict[k]["Total_Length"]     = total_edge_length
+#    return outliers_dict
+## Calculate Alpha Value
+#def alpha_value():
+#    q90     = np.quantile(me_school["ME"],0.90)
+#    alpha   = q90
+#    return min(alpha,100)
+#        
+## Sparsity
+#def calculate_sparsity(minimum_edge):
+#    q90      = np.quantile(minimum_edge,0.9)
+#    sparsity = min(q90 / 1000, 1)
+#    return sparsity
+## skewness: ratio of edge lengths in edge distribution: (q90 - q50) / (q90 - q10)
+#def calculate_skewness(minimum_edge):
+#    q90                 = np.quantile(minimum_edge,0.9)
+#    q50                 = np.quantile(minimum_edge,0.5)
+#    q10                 = np.quantile(minimum_edge,0.1)
+#    skewness            = (q90 - q50) / (q90 - q10)
+#    # !!!!!!!
+#    #t                   = len(minimum_edge) / 500 # total count of binned data
+#    # !!!!!!!
+#    #correction          = 0.7 + 0.3 * (1 + t**2)
+#    
+#    #corrected_skewness  = 1 - correction * (1 - skewness) 
+#    #return corrected_skewness
+#    return skewness
+#    
+## clumpy = max(1-max(legnth(ek))/length(ej)) - 
+#    
+#    
+## skinny = 1 - sqrt(4pi * area(a))) / perimeter(a)  
+#    
+# 
+## convex = area(A)/area(H) - area of alpha hull / convex hull
