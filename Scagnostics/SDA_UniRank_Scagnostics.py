@@ -9,6 +9,7 @@
 #-------------------------------------------------------------
 
 ## Packages used
+
 import pandas as pd
 import numpy as np
 from scipy.spatial.distance import pdist, squareform
@@ -26,6 +27,7 @@ import os
 #-------------------------------------------------------------
 
 ## Data Import and Cleansing
+
 # WD
 path              = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..'))
 #path             = os.path.dirname(os.path.realpath("__file__")) + '\\'
@@ -242,11 +244,14 @@ def Polygon_Area(corners):
 
 
 #-------------------------------------------------------------
-# Minimum Spanning Tree and Convex Hull
+
+## Minimum Spanning Tree, Convex Hull and Concave Hull
+
+# Initializing Variables  
 Convex_Hull_Edges_Sum = np.zeros((nr_col)) 
 Convex_Hull_Area = np.zeros((nr_col)) 
 
-## Minimum Spanning Tree Plots for our Data Sets
+## MST, Convex and Concave Hull looping through our Data Sets
 for c in range (1,nr_col):
     # Col Name
     indep_var = df_clean.columns[c]
